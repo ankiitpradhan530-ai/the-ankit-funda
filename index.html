@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>THE ANKIT FUNDA – AI Documentary Studio</title>
+<style>
+:root{--bg:#07070a;--card:#121217;--line:#2a2a33;--gold:#d4af37;--tx:#f3f1ea;--mut:#9a98a0;--ok:#4caf7a;--bad:#e0605a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:dark}
+@media (prefers-color-scheme:dark){:root{--bg:#07070a}}
+:root[data-theme="light"],:root[data-theme="dark"]{--bg:#07070a}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:76px}
+header{padding:14px 16px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#14120a,var(--bg))}
+.logo{font-family:Georgia,serif;letter-spacing:.18em;color:var(--gold);font-size:18px;font-weight:700}
+.sub{color:var(--mut);font-size:12px;letter-spacing:.12em}
+main{padding:14px;max-width:900px;margin:auto}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;overflow-x:auto;background:#0d0d12;border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));gap:4px;z-index:5}
+nav button{flex:0 0 auto;min-width:68px;background:none;border:0;color:var(--mut);font-size:11px;padding:6px 8px;border-radius:10px}
+nav button b{display:block;font-size:18px;font-weight:400}
+nav button.on{color:var(--gold);background:#1b1810}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 12px;animation:in .35s ease}
+@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+h2{font-family:Georgia,serif;color:var(--gold);margin:0 0 4px;font-size:20px}
+h3{margin:0 0 6px;font-size:14px;color:var(--gold);letter-spacing:.06em;text-transform:uppercase}
+label{display:block;font-size:12px;color:var(--mut);margin:10px 0 4px}
+input,select,textarea{width:100%;background:#0b0b0f;color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit}
+textarea{min-height:110px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:1px solid var(--gold)}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1 1 140px}
+.btn{background:var(--gold);color:#111;border:0;border-radius:10px;padding:10px 14px;font-weight:700;font-size:14px;cursor:pointer;width:auto}
+.btn.g{background:none;color:var(--gold);border:1px solid var(--gold)}
+.btn.s{padding:6px 10px;font-size:12px}
+.tag{display:inline-block;font-size:11px;border:1px solid var(--line);border-radius:99px;padding:2px 8px;color:var(--mut);margin:0 4px 4px 0}
+.tag.warn{color:var(--bad);border-color:var(--bad)}.tag.ok{color:var(--ok);border-color:var(--ok)}
+.banner{border:1px dashed var(--gold);color:var(--gold);border-radius:10px;padding:8px 10px;font-size:12px;margin-bottom:12px}
+.muted{color:var(--mut);font-size:13px}
+.kv{display:grid;grid-template-columns:110px 1fr;gap:4px 10px;font-size:13px}.kv span:nth-child(odd){color:var(--mut)}
+pre{white-space:pre-wrap;background:#0b0b0f;border:1px solid var(--line);border-radius:10px;padding:10px;font:12px/1.5 ui-monospace,Menlo,monospace;margin:6px 0}
+a{color:var(--gold)}
+.sc{border-left:3px solid var(--gold)}.sc.done{border-left-color:var(--ok);opacity:.8}
+.bar{height:6px;background:#1d1d24;border-radius:9px;overflow:hidden}.bar i{display:block;height:100%;background:var(--gold)}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid #555;border-top-color:var(--gold);border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.modal{position:fixed;inset:0;background:#000c;z-index:10;display:flex;align-items:center;justify-content:center;padding:14px}
+.modal .card{width:100%;max-width:700px;max-height:90vh;overflow:auto}
+.step{display:flex;gap:8px;margin:6px 0;font-size:13px}.step b{color:var(--gold);flex:0 0 22px}
+.wrap{overflow-x:auto}
+</style></head><body>
+<header><div class="logo">THE ANKIT FUNDA</div><div class="sub">AI DOCUMENTARY STUDIO</div></header>
+<main id="app"></main>
+<nav id="nav"></nav>
+<script>
+/* ===== INTEGRATION POINTS (not connected) =====
+   Plug real services in here. Until then the app runs in DEMO MODE with templates. */
+const INTEGRATIONS={
+  ai:null,        // e.g. async (prompt)=>text  -> your LLM API for scripts/research
+  research:null,  // e.g. async (topic)=>sources[] -> verified web research API
+  video:null      // e.g. async (prompt)=>videoUrl -> AI video generation API
+};
+async function callAI(p){
+  let response;
+  try {
+    response = await fetch('/.netlify/functions/generate', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({prompt:p})
+    });
+  } catch (err) {
+    throw new Error('Could not contact the Netlify AI backend. Check your internet connection and confirm this site was deployed with the Netlify Function.');
+  }
+
+  const raw = await response.text();
+  let data = {};
+  try { data = raw ? JSON.parse(raw) : {}; } catch (_) {}
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error('Netlify AI Function not found (404). Deploy the complete project using GitHub; a Netlify Drop static upload does not publish this function.');
+    }
+    if (response.status === 503) {
+      throw new Error(data.error || 'GEMINI_API_KEY is missing from this Netlify project. Add it under Project configuration → Environment variables, enable Functions scope, then redeploy.');
+    }
+    throw new Error(data.error || `AI backend error (${response.status}). Check Netlify Function logs and your Gemini API quota/key.`);
+  }
+  if (!data.text) throw new Error('The AI backend responded, but returned no script. Try again with a shorter topic.');
+  return data.text;
+}
+
+const E=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const TABS=[['script','Script','✍️'],['research','Research','🔎'],['visual','Visuals','🎬'],['footage','Footage','🎞️'],['prompt','AI Prompts','✨'],['edit','Editing','✂️'],['lib','Library','📁']];
+let S={tab:'script',topic:'',dur:10,lang:'English',style:'Investigative',script:'',scenes:[],id:null,facts:[],app:'KineMaster',busy:false,modal:null,msg:''};
+let lib=[];try{lib=JSON.parse(localStorage.getItem('af_lib')||'[]')}catch(e){}
+function save(){
+  if(!S.id)S.id=Date.now();
+  const p={id:S.id,title:S.topic||'Untitled',topic:S.topic,dur:S.dur,lang:S.lang,style:S.style,script:S.script,scenes:S.scenes,facts:S.facts,t:Date.now()};
+  lib=lib.filter(x=>x.id!==S.id);lib.unshift(p);
+  try{localStorage.setItem('af_lib',JSON.stringify(lib))}catch(e){S.msg='Storage unavailable in this browser – use Export to copy your work.'}
+}
+const auto=()=>{if(S.id)save()};
+
+/* ---------- demo content ---------- */
+const SECS=['Opening Hook','Introduction','Background','Main Investigation','Facts and Evidence','Real Examples','Analysis','Emotional Connection','Conclusion'];
+function demoScript(){
+  const T=S.topic||'your topic';
+  const L={Odia:'(Odia narration – connect an AI API or write in Odia here)',Hindi:'(Hindi narration – connect an AI API or write in Hindi here)','Odia + Hindi':'(Odia + Hindi narration – connect an AI API)',English:''}[S.lang];
+  const B={
+  'Opening Hook':[`What if the biggest story about ${T} is the one nobody around you is talking about?`,`Stay with me for ${S.dur} minutes, because we are about to follow the evidence.`],
+  'Introduction':[`Today on THE ANKIT FUNDA, we investigate ${T}.`,`We will separate confirmed facts from rumours, and I will tell you which is which. [VERIFY: add scope of the investigation]`],
+  'Background':[`To understand ${T}, we first go back to how it began. [VERIFY: add dated, sourced history]`,`Here is the context most people skip.`],
+  'Main Investigation':[`Now the real question: what is actually happening with ${T}?`,`Let us look at what official records and reports say. [VERIFY: cite report name + year]`],
+  'Facts and Evidence':[`Here are the numbers. [VERIFY: add statistic + source link]`,`Notice what the data says, and what it does not say.`],
+  'Real Examples':[`Let us step out of the numbers and into real life. [VERIFY: add a real, documented example]`,`This is where it becomes personal.`],
+  'Analysis':[`So what does all this mean? Opinion alert: this is analysis, not confirmed fact.`,`Experts disagree on one key point, and that is worth understanding. [VERIFY: name the experts + sources]`],
+  'Emotional Connection':[`Behind every statistic there is a person, a family, a community.`,`Think about your own street, your own town.`],
+  'Conclusion':[`So, what did we learn about ${T}?`,`Now you know the facts, so what will you do with them? Thank you for watching THE ANKIT FUNDA.`]};
+  return (L?L+'\n\n':'')+SECS.map(s=>`## ${s}\n${B[s].join(' ')}`).join('\n\n');
+}
+const DEMO_TOPIC='Plastic waste in India';
+const DEMO_SCRIPT=`## Opening Hook
+ଭାରତରେ ପ୍ରତିଦିନ ହଜାର ହଜାର ଟନ୍ ପ୍ଲାଷ୍ଟିକ୍ ଆବର୍ଜନା ସୃଷ୍ଟି ହେଉଛି। [VERIFY: add official figure + source]
+Where does all of it go? Let us follow one plastic bottle.
+## Main Investigation
+First stop: a city landfill, where waste from thousands of homes arrives every morning.
+Up close, you can see how much of it is plastic packaging.
+Workers sort the waste by hand, often with little protection.
+Some plastic never reaches a recycler and ends up in drains and rivers.
+## Conclusion
+The problem is large, but it is not unsolvable. [VERIFY: add sourced solutions]
+Thank you for watching THE ANKIT FUNDA.`;
+
+/* ---------- scene director (rule-based; swap with AI for deeper results) ---------- */
+const SHOTS=[['Aerial establishing shot','Drone, slow descend','Golden-hour sunlight','Wide outdoor location'],['Extreme close-up detail','Handheld, slight push-in','Soft natural window light','Tight texture / detail'],['Medium shot of people at work','Gimbal tracking','Overcast diffused light','Real working environment'],['Wide environmental shot','Slow pan left to right','Late-afternoon haze','Open landscape / street'],['Over-the-shoulder shot','Static tripod','Practical lights, low-key','Interior, documentary style']];
+const MUSIC=['Low ambient drone, tense','Soft piano, reflective','Light percussive pulse, investigative','Warm strings, emotional','Sparse cinematic pads'];
+const SFX=['Wind / room tone','Soft whoosh','Footsteps, ambient crowd','Light riser into cut','Subtle heartbeat low'];
+const TRANS=['Hard cut','Cross dissolve (0.5s)','Dip to black (0.4s)','Match cut on movement','Quick push-zoom'];
+const WEATHER=['clear sky','light haze','overcast','soft golden sunset','light morning mist'];
+const LENS=['35mm documentary lens','24mm wide lens','85mm shallow depth of field','50mm natural perspective','drone 24mm'];
+function split(script,topic){
+  const out=[];let sec='';
+  script.split(/\n+/).forEach(line=>{
+    line=line.trim();if(!line)return;
+    if(/^#+\s*/.test(line)){sec=line.replace(/^#+\s*/,'');return}
+    line.split(/(?<=[.!?।])\s+/).forEach(t=>{
+      t=t.trim();if(t.length<3)return;
+      const i=out.length,k=SHOTS[i%SHOTS.length],w=t.replace(/\[VERIFY[^\]]*\]/g,'').trim().split(/\s+/).length;
+      out.push({n:i+1,sec,text:t,dur:Math.max(4,Math.round(w*0.45)),vis:`${k[0]} illustrating: "${t.replace(/\[VERIFY[^\]]*\]/g,'').trim().slice(0,70)}"`,kw:topic||'',cam:k[0],mov:k[1],light:k[2],env:k[3],
+        broll:['Establishing wide of location','Hands / detail close-up','Reaction or crowd cutaway'].join('; '),ost:t.length<60?t:'',sfx:SFX[i%5],music:MUSIC[i%5],trans:TRANS[(i+1)%5],ftype:'Stock',done:false});
+    });
+  });
+  return out;
+}
+const buildPrompt=(s,i)=>`Photorealistic documentary-style footage, not cartoonish. Main subject: ${s.vis}. Environment: ${s.env}. Realistic natural human movement, no exaggerated motion. Camera angle: ${s.cam}. Camera movement: ${s.mov}. Lighting: ${s.light}. Weather: ${WEATHER[i%5]}. Cinematic documentary atmosphere, shot on ${LENS[i%5]}. Duration: ${s.dur} seconds. Aspect ratio 16:9. No text, no logos, no watermarks. (Label the output as AI-generated.)`;
+
+/* ---------- editing teacher ---------- */
+const APPS={
+ KineMaster:{imp:'KineMaster → "+" → Media Browser → clip चुनें → Tap "Add"',txt:'"Layer" → Text → type करें; Subtitle के लिए हर लाइन अलग Text layer',aud:'"Audio" बटन → Music Assets/Local file; VO के लिए Mic (Voice) बटन',tr:'दो clips के बीच वाले icon पर tap → Transition → Fade/Dissolve → Duration 0.5s',col:'Clip चुनें → Color Adjustment',exp:'Top-right Export → 1080p, 30fps, High bitrate → Save to Gallery'},
+ 'Alight Motion':{imp:'Alight Motion → New Project → 16:9, 1080p, 30fps → "+" → Video',txt:'"+" → Text → type करें; position/size Move & Transform से',aud:'"+" → Audio → Music/File; volume slider से level set करें',tr:'दो layers को overlap करें और opacity keyframe लगाएँ (Fade)',col:'Layer चुनें → Effects → Color Correction (Contrast, Saturation, Temperature)',exp:'Share → Export as Video → 1080p, 30fps → Export'},
+ VN:{imp:'VN → "+" → New Project → 16:9 → Video चुनें → Next',txt:'Text टैब → Add Text → timeline पर length खींचें; Subtitle के लिए Captions/Text',aud:'Audio टैब → Music / Record VO; Volume slider',tr:'दो clips के बीच white box tap → Transition → Dissolve → 0.5s',col:'Clip चुनें → Filter / Adjust (Contrast, Saturation, Temp)',exp:'Top-right Export → 1080p, 30fps → Export to Gallery'},
+ 'Node Video':{imp:'Node Video → New Project → 16:9 → Import media',txt:'Text tool से title/subtitle add करें (menu नाम version के हिसाब से अलग हो सकते हैं)',aud:'Audio import → timeline के audio track पर रखें; volume नीचे रखें',tr:'Clips के बीच transition option → Dissolve → 0.5s',col:'Clip → Color / Adjust panel',exp:'Export → 1080p, 30fps → Save'}
+};
+function steps(s,a){
+  const A=APPS[a],kw=s.kw||'topic';
+  return [
+   ['ଫୁଟେଜ୍ ଡାଉନଲୋଡ୍ / फुटेज डाउनलोड',`Footage tab के link से "${kw}" सर्च करें। License पढ़ें, HD (1080p) clip download करें। Type: ${s.ftype}.`],
+   ['କ୍ଲିପ୍ ଇମ୍ପୋର୍ଟ / क्लिप इम्पोर्ट',A.imp],
+   ['କେତେ ସେକେଣ୍ଡ / कितने सेकंड',`Clip को ${s.dur} सेकंड पर trim करें (clip के end handle को खींचें / Split → Delete). Narration खत्म होने से 0.5s पहले cut रखें।`],
+   ['ଭଏସ୍ ଓଭର୍ / वॉइसओवर',`VO को Audio track 1 में Scene ${s.n} के शुरू (00:00) पर रखें। ${A.aud}`],
+   ['ମ୍ୟୁଜିକ୍ / म्यूज़िक',`${s.music}. Music volume 15–20% रखें ताकि VO साफ सुनाई दे। Free/licensed music ही लें (YouTube Audio Library).`],
+   ['ସାଉଣ୍ଡ ଇଫେକ୍ଟ / साउंड इफेक्ट',`${s.sfx} — cut के ठीक पहले 0.3s पर रखें, volume 30–40%.`],
+   ['ଟ୍ରାଞ୍ଜିସନ୍ / ट्रांज़िशन',`${s.trans}. ${A.tr}`],
+   ['ଟେକ୍ସଟ୍ / टेक्स्ट और सबटाइटल',`On-screen text: "${s.ost||'(none)'}". ${A.txt}. Font: bold sans-serif, white, size ~ 40, नीचे-बीच में रखें।`],
+   ['କଲର ଗ୍ରେଡିଂ / कलर ग्रेडिंग',`${A.col}: Contrast +10, Saturation −10, Temperature +5 (हल्का warm), Vignette 15%. सब clips पर एक जैसी values रखें।`],
+   ['ଏକ୍ସପୋର୍ଟ / एक्सपोर्ट',A.exp]
+  ];
+}
+const TIMELINE=`TIMELINE EXAMPLE (Scene = ${'{dur}'}s)
+V1  |[Clip A 0-6s]x[Clip B 6-11s]x[Clip C 11-16s]|   ← footage + transitions (x)
+T1  |   [Title text 1-5s]      [Lower-third 8-12s]|   ← on-screen text
+A1  |[===== Voiceover (100% volume) =============]|
+A2  |[~~~~ Music (15-20%) ~~~~~~~~~~~~~~~~~~~~~~~~]|
+A3  |  *whoosh     *riser                 *hit    |   ← SFX (30-40%)`;
+
+/* ---------- helpers ---------- */
+const q=s=>encodeURIComponent((s||S.topic||'').trim());
+const links=k=>[['Pexels',`https://www.pexels.com/search/videos/${q(k)}/`],['Pixabay',`https://pixabay.com/videos/search/${q(k)}/`],['Wikimedia Commons',`https://commons.wikimedia.org/w/index.php?search=${q(k)}&ns6=1`],['Internet Archive',`https://archive.org/search?query=${q(k)}&and[]=mediatype%3A%22movies%22`]];
+async function copy(t){try{await navigator.clipboard.writeText(t);S.msg='Copied ✓'}catch(e){const x=document.createElement('textarea');x.value=t;document.body.appendChild(x);x.select();try{document.execCommand('copy');S.msg='Copied ✓'}catch(_){S.msg='Copy blocked – select text manually'}x.remove()}toast()}
+let tt;function toast(){let t=document.getElementById('toast');if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:84px;background:#d4af37;color:#111;padding:8px 14px;border-radius:99px;font-size:13px;z-index:20';document.body.appendChild(t)}t.textContent=S.msg;t.style.display='block';clearTimeout(tt);tt=setTimeout(()=>t.style.display='none',1800)}
+const prog=()=>{const d=S.scenes.filter(s=>s.done).length;return S.scenes.length?Math.round(d*100/S.scenes.length):0};
+const need=()=>S.scenes.length?'':`<div class="card"><h2>No scenes yet</h2><p class="muted">Paste or generate a script, then tap <b>Split into scenes</b> in the Script tab.</p><button class="btn" data-a="tab" data-v="script">Go to Script</button></div>`;
+const sel=(id,opts,v)=>`<select id="${id}">${opts.map(o=>`<option ${String(o)===String(v)?'selected':''}>${o}</option>`).join('')}</select>`;
+const fld=(i,f,l,v)=>`<label>${l}</label><input data-i="${i}" data-f="${f}" value="${E(v)}">`;
+
+/* ---------- views ---------- */
+const V={
+script(){return `<div class="banner">AI SCRIPT GENERATION uses a secure Netlify Function and your server-side GEMINI_API_KEY. If generation fails, check that the complete project (including netlify/functions/generate.mjs) was deployed. Unverified claims remain marked [VERIFY].</div>
+<div class="card"><h2>AI Script Generator</h2><p class="muted">Enter a topic or paste an existing script.</p>
+<label>Documentary topic</label><input id="topic" value="${E(S.topic)}" placeholder="e.g. Plastic waste in India">
+<div class="row"><div><label>Duration (min)</label>${sel('dur',[5,10,15,20,30],S.dur)}</div><div><label>Language</label>${sel('lang',['Odia','Hindi','English','Odia + Hindi'],S.lang)}</div><div><label>Style</label>${sel('style',['Investigative','Narrative','Explainer','Comedy-informative','Emotional'],S.style)}</div></div>
+<div class="row" style="margin-top:12px"><button class="btn" data-a="gen">${S.busy?'<span class="spin"></span>Generating…':'Generate script'}</button><button class="btn g" data-a="demo">Load demo</button></div></div>
+<div class="card"><h3>Script</h3><textarea id="script" style="min-height:260px" placeholder="Paste your complete script here. Use '## Section' lines for headings.">${E(S.script)}</textarea>
+<div class="row" style="margin-top:10px"><button class="btn" data-a="split">Split into scenes ▸</button><button class="btn g" data-a="copyScript">Copy</button><button class="btn g" data-a="exp" data-v="script">Export</button><button class="btn g" data-a="save">Save project</button></div>
+<p class="muted">Rule: never publish a line tagged [VERIFY] until you have checked it against a real source.</p></div>`},
+research(){
+ const T=S.topic;const src=[['Government (PIB)',`https://pib.gov.in/allRel.aspx`],['Open data (data.gov.in)',`https://data.gov.in/search?title=${q()}`],['Google Scholar',`https://scholar.google.com/scholar?q=${q()}`],['News (Google News)',`https://news.google.com/search?q=${q()}`],['Wikipedia (background only)',`https://en.wikipedia.org/w/index.php?search=${q()}`],['Our World in Data',`https://ourworldindata.org/search?q=${q()}`],['Internet Archive',`https://archive.org/search?query=${q()}`]];
+ return `<div class="card"><h2>Documentary Research</h2><p class="muted">Live web research is not connected (<code>INTEGRATIONS.research</code>). Use the source finders below and log every claim in the Fact Ledger.</p>
+ <label>Topic</label><input id="topic" value="${E(T)}" placeholder="Enter topic"></div>
+ <div class="card"><h3>Source finders for “${E(T||'…')}”</h3>${['Historical background','Important events (timeline)','Government reports','Verified statistics','News articles','Official websites','Research papers'].map(x=>`<span class="tag">${x}</span>`).join('')}
+ <div style="margin-top:8px">${src.map(s=>`<div><a href="${s[1]}" target="_blank" rel="noopener">${s[0]} ↗</a></div>`).join('')}</div></div>
+ <div class="card"><h3>Fact Ledger</h3><p class="muted">Every important claim needs a source and a status.</p>
+ <label>Claim</label><input id="fc"><label>Source link / name</label><input id="fs"><label>Status</label>${sel('ft',['Confirmed fact','Allegation','Opinion','Assumption'],'Confirmed fact')}
+ <button class="btn" style="margin-top:10px" data-a="addFact">Add to ledger</button>
+ ${S.facts.map((f,i)=>`<div class="card" style="margin:10px 0 0"><span class="tag ${f.t==='Confirmed fact'?'ok':'warn'}">${f.t}</span><div>${E(f.c)}</div><div class="muted">Source: ${E(f.s)||'⚠ none — do not use'}</div><button class="btn g s" data-a="delFact" data-v="${i}">Remove</button></div>`).join('')}</div>`},
+visual(){return need()||`<div class="card"><h2>Script to Visual Director</h2><p class="muted">${S.scenes.length} scenes · ${prog()}% done · Fields are editable. Auto-suggestions are rule-based; refine them or connect an AI API.</p><div class="bar"><i style="width:${prog()}%"></i></div><div class="row" style="margin-top:10px"><button class="btn g" data-a="exp" data-v="plan">Export visual plan</button></div></div>`+S.scenes.map((s,i)=>`<div class="card sc ${s.done?'done':''}"><h3>Scene ${String(s.n).padStart(2,'0')} · ${s.dur}s <span class="muted" style="text-transform:none">${E(s.sec)}</span></h3><p>“${E(s.text)}”</p>
+ <div class="kv"><span>Visual</span><span>${E(s.vis)}</span><span>Real footage</span><span>${E(s.ftype)} — search “${E(s.kw)}”</span><span>Camera</span><span>${E(s.cam)}</span><span>Movement</span><span>${E(s.mov)}</span><span>Lighting</span><span>${E(s.light)}</span><span>Background</span><span>${E(s.env)}</span><span>B-roll</span><span>${E(s.broll)}</span><span>On-screen</span><span>${E(s.ost)||'—'}</span><span>SFX</span><span>${E(s.sfx)}</span><span>Music</span><span>${E(s.music)}</span><span>Transition</span><span>${E(s.trans)}</span></div>
+ ${fld(i,'vis','Edit visual description',s.vis)}${fld(i,'ost','Edit on-screen text',s.ost)}
+ <div class="row" style="margin-top:10px"><button class="btn g s" data-a="copyScene" data-v="${i}">Copy scene</button><button class="btn s" data-a="done" data-v="${i}">${s.done?'✓ Done (undo)':'Mark done'}</button></div></div>`).join('')},
+footage(){return need()||`<div class="card"><h2>Real Footage Finder</h2><div class="banner">Thumbnails are not loaded (no media API connected) — use the search links. Always read each clip’s license and attribution terms. Pexels/Pixabay licenses differ from Wikimedia/Archive items; some Archive items are copyrighted. News channel and YouTube clips are NOT free to reuse.</div>
+ <span class="tag">Actual documentary footage</span><span class="tag">Stock footage</span><span class="tag">AI-generated</span><span class="tag">Illustrative recreation</span></div>`+S.scenes.map((s,i)=>`<div class="card sc"><h3>Scene ${s.n}</h3><p class="muted">“${E(s.text.slice(0,90))}”</p>${fld(i,'kw','Search keywords (English works best)',s.kw)}<label>Footage type (label honestly)</label><select data-i="${i}" data-f="ftype">${['Actual documentary footage','Stock','AI-generated','Illustrative recreation'].map(o=>`<option ${o===s.ftype?'selected':''}>${o}</option>`).join('')}</select>${s.ftype==='AI-generated'?'<p><span class="tag warn">Must be labelled AI-generated on screen / in description</span></p>':''}<div class="row" style="margin-top:8px">${links(s.kw).map(l=>`<a class="btn g s" style="text-decoration:none;text-align:center" href="${l[1]}" target="_blank" rel="noopener">${l[0]} ↗</a>`).join('')}</div></div>`).join('')},
+prompt(){return need()||`<div class="card"><h2>AI Cinematic Video Prompts</h2><div class="banner">Video generation is not connected (<code>INTEGRATIONS.video</code>). Copy prompts into your preferred AI video tool. Output is AI-generated — never present it as real footage.</div><button class="btn g" data-a="exp" data-v="prompts">Export all prompts</button></div>`+S.scenes.map((s,i)=>`<div class="card sc"><h3>Scene ${s.n} · ${s.dur}s</h3><pre>${E(buildPrompt(s,i))}</pre><button class="btn s" data-a="copyPrompt" data-v="${i}">Copy prompt</button></div>`).join('')},
+edit(){return need()||`<div class="card"><h2>Mobile Editing Studio</h2><p class="muted">Step-by-step in Odia + Hindi. Menu names can change between app versions.</p><label>Editing app</label>${sel('app',Object.keys(APPS),S.app)}<pre>${E(TIMELINE)}</pre></div>`+S.scenes.map((s,i)=>`<div class="card sc ${s.done?'done':''}"><h3>Scene ${s.n} · ${s.dur}s</h3><p class="muted">“${E(s.text.slice(0,80))}”</p>${steps(s,S.app).map((t,k)=>`<div class="step"><b>${k+1}.</b><div><b style="color:var(--tx)">${t[0]}</b><br>${E(t[1])}</div></div>`).join('')}<button class="btn s" data-a="done" data-v="${i}">${s.done?'✓ Done (undo)':'Mark scene edited'}</button></div>`).join('')},
+lib(){return `<div class="card"><h2>Project Library</h2><p class="muted">Saved in this browser (localStorage). ${S.id?'Current project is auto-saved.':'Press “Save project” in Script to start.'}</p><div class="row"><button class="btn" data-a="new">New project</button><button class="btn g" data-a="save">Save current</button></div></div>`+(lib.length?lib.map(p=>{const d=p.scenes.filter(s=>s.done).length,pc=p.scenes.length?Math.round(d*100/p.scenes.length):0;return `<div class="card"><h3>${E(p.title)}</h3><p class="muted">${p.scenes.length} scenes · ${d} done · ${p.scenes.length-d} pending</p><div class="bar"><i style="width:${pc}%"></i></div><div class="row" style="margin-top:10px"><button class="btn s" data-a="open" data-v="${p.id}">Open / continue</button><button class="btn g s" data-a="del" data-v="${p.id}">Delete</button></div></div>`}).join(''):'<div class="card muted">No saved projects yet.</div>')}
+};
+
+/* ---------- exports ---------- */
+const sceneText=s=>`SCENE ${s.n} (${s.dur}s) [${s.sec}]\nNarration: ${s.text}\nVisual: ${s.vis}\nFootage: ${s.ftype} — "${s.kw}"\nCamera: ${s.cam} | ${s.mov}\nLighting: ${s.light}\nBackground: ${s.env}\nB-roll: ${s.broll}\nOn-screen: ${s.ost||'-'}\nSFX: ${s.sfx}\nMusic: ${s.music}\nTransition: ${s.trans}`;
+const exportText=k=>k==='script'?S.script:k==='plan'?S.scenes.map(sceneText).join('\n\n'):S.scenes.map((s,i)=>`SCENE ${s.n}\n${buildPrompt(s,i)}`).join('\n\n');
+
+/* ---------- render + events ---------- */
+function syncInputs(){const g=id=>document.getElementById(id);if(g('topic'))S.topic=g('topic').value;if(g('dur'))S.dur=+g('dur').value;if(g('lang'))S.lang=g('lang').value;if(g('style'))S.style=g('style').value;if(g('script'))S.script=g('script').value}
+function render(){
+  document.getElementById('nav').innerHTML=TABS.map(t=>`<button class="${S.tab===t[0]?'on':''}" data-a="tab" data-v="${t[0]}"><b>${t[2]}</b>${t[1]}</button>`).join('');
+  document.getElementById('app').innerHTML=V[S.tab]();
+  if(S.modal!==null){const m=document.createElement('div');m.className='modal';m.innerHTML=`<div class="card"><h3>Export</h3><p class="muted">Direct file downloads are blocked in published pages — copy the text and paste it into Notes / Docs.</p><textarea id="mt" style="min-height:260px" readonly>${E(S.modal)}</textarea><div class="row" style="margin-top:10px"><button class="btn" data-a="copyModal">Copy all</button><button class="btn g" data-a="close">Close</button></div></div>`;document.body.appendChild(m)}
+}
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,v=b.dataset.v;syncInputs();
+  if(a==='tab'){S.tab=v;scrollTo(0,0)}
+  else if(a==='demo'){S.topic=DEMO_TOPIC;S.script=DEMO_SCRIPT;S.scenes=[]}
+  else if(a==='gen'){if(S.busy)return;if(!S.topic.trim()){S.msg='Enter a topic first';toast();return}S.busy=true;render();
+    try{
+      const prompt=`You are the documentary scriptwriter for THE ANKIT FUNDA. Write a complete, continuous ${S.dur}-minute ${S.style} documentary script in ${S.lang} about: ${S.topic}.
+Use a strong 10–30 second opening hook, clear narrative flow, smooth transitions, engaging examples, and an emotionally resonant conclusion. For Odia + Hindi, use natural spoken Odia as the main language with simple Hindi punchlines. Include A-roll narration and clearly labelled B-roll / visual suggestions. Do not invent statistics, dates, quotations, named incidents, or sources. Mark every claim that needs checking with [VERIFY] and explain what source is needed. Separate confirmed facts from analysis and opinion. Avoid filler and do not leave sections half-written. Aim for a full script suitable for the selected duration.`;
+      S.script=await callAI(prompt);
+      S.msg='AI script generated ✓';
+    }catch(err){
+      S.msg=err.message || 'AI generation failed';
+    }finally{S.busy=false;}
+    toast();
+  }
+  else if(a==='split'){if(!S.script.trim()){S.msg='Paste or generate a script first';toast();return}S.scenes=split(S.script,S.topic);S.tab='visual';auto()}
+  else if(a==='copyScript')return copy(S.script);
+  else if(a==='save'){save();S.msg='Project saved ✓';toast()}
+  else if(a==='exp'){S.modal=exportText(v)}
+  else if(a==='close'){S.modal=null;document.querySelector('.modal')?.remove()}
+  else if(a==='copyModal')return copy(document.getElementById('mt').value);
+  else if(a==='copyScene')return copy(sceneText(S.scenes[v]));
+  else if(a==='copyPrompt')return copy(buildPrompt(S.scenes[v],+v));
+  else if(a==='done'){S.scenes[v].done=!S.scenes[v].done;auto()}
+  else if(a==='addFact'){const c=document.getElementById('fc').value.trim();if(!c)return;S.facts.push({c,s:document.getElementById('fs').value.trim(),t:document.getElementById('ft').value});auto()}
+  else if(a==='delFact'){S.facts.splice(v,1);auto()}
+  else if(a==='new'){S={...S,topic:'',script:'',scenes:[],id:null,facts:[],tab:'script'}}
+  else if(a==='open'){const p=lib.find(x=>x.id==v);if(p){S={...S,...p,tab:'visual'}}}
+  else if(a==='del'){lib=lib.filter(x=>x.id!=v);try{localStorage.setItem('af_lib',JSON.stringify(lib))}catch(_){}if(S.id==v)S.id=null}
+  if(S.modal&&a!=='close')document.querySelector('.modal')?.remove();
+  render();
+});
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.dataset.i!==undefined){S.scenes[t.dataset.i][t.dataset.f]=t.value;auto();if(t.dataset.f==='ftype')render()}
+  else if(t.id==='app'){S.app=t.value;render()}
+  else if(['topic','dur','lang','style','script'].includes(t.id)){syncInputs();auto()}
+});
+render();
+</script></body></html>
